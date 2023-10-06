@@ -1,0 +1,2 @@
+Nessa pasta você irá colocar os datasets que deseja utilizar
+para realizar o treinamento dos modelos.
