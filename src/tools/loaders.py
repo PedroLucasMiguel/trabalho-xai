@@ -1,3 +1,4 @@
+import os
 import torch
 from torchvision import datasets
 from torchvision import transforms
@@ -12,8 +13,8 @@ def get_loaders(dataset_dir:str, batch_size:int=16):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    train = datasets.ImageFolder(dataset_dir + "/train/", preprocess)
-    val = datasets.ImageFolder(dataset_dir + "/val/", preprocess)
+    train = datasets.ImageFolder(os.path.join(dataset_dir, "train"), preprocess)
+    val = datasets.ImageFolder(os.path.join(dataset_dir, "val"), preprocess)
 
     train_loader = torch.utils.data.DataLoader(
         train,

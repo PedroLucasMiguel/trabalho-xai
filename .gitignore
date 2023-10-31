@@ -160,6 +160,5 @@ cython_debug/
 #.idea/
 
 # Project specific
-datasets/PetImages
 datasets/*_CV
 output

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from torch import Tensor
 
 # Modelo densenet201 utilizando encoder-decoder
@@ -23,9 +24,6 @@ class DenseNet201EncoderDecoder(nn.Module):
             nn.Conv2d(128, 3, 3, padding=1, stride=1),
             nn.ReLU(),
         )
-
-        #self.features = nn.Sequential(*list(backbone.features.children())[:-1])
-        #self.last_bn = nn.BatchNorm2d(1920, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         
         self.features = backbone.features
         self.classifier = nn.Linear(1920, n_classes)
@@ -36,14 +34,14 @@ class DenseNet201EncoderDecoder(nn.Module):
     def get_activations_gradient(self):
         return self.gradient
 
-    def get_activations(self, x: Tensor):
+    def get_activations(self, x:Tensor):
         out = self.encoder(x)
         out = self.decoder(out)
         out = self.features(out)
 
         return out
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x:Tensor) -> Tensor:
         out = self.encoder(x)
         out = self.decoder(out)
         out = self.features(out)
@@ -75,12 +73,12 @@ class DenseNet201GradCam(nn.Module):
     def get_activations_gradient(self):
         return self.gradient
 
-    def get_activations(self, x: Tensor):
-        out = self.features(out)
+    def get_activations(self, x:Tensor):
+        out = self.features(x)
         return out
 
-    def forward(self, x: Tensor) -> Tensor:
-        out = self.features(out)
+    def forward(self, x:Tensor) -> Tensor:
+        out = self.features(x)
         
         # Grad-cam
         out = F.relu(out, inplace=True)

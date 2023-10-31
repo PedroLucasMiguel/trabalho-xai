@@ -1,119 +1,59 @@
 import os
-import json
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
+import argparse
+from torch import manual_seed
 from models.densenet import *
-from tools.loaders import get_loaders
-from tools.dttools import convert_dataset
-from tools.cam_metric import get_cam_metrics
+from models.resnet import *
+from models.efficientnet import *
+from torchvision.models import densenet201, resnet50, efficientnet_b0
+from train import train
 
-from ignite.handlers import ModelCheckpoint
-from ignite.contrib.handlers import global_step_from_engine
-from ignite.contrib.handlers.tqdm_logger import ProgressBar
-from ignite.metrics import Accuracy, Precision, Recall, Loss
-from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-
-# Hiper parâmetros
+# Hiper-parâmetros de treinamento
 BATCH_SIZE = 16
-EPOCHS = 1
+EPOCHS = 10
 LR = 0.0001
-
-def train_validade_test_model(model, dataset_path, train_loader, val_loader) -> None:
-
-    # JSON com as métricas finais
-    final_json = {}
-
-    # Verificando se a máquina possui suporte para treinamento em GPU
-    # (Suporte apenas para placas NVIDIA)
-    device = f"cuda" if torch.cuda.is_available() else "cpu"
-    model = model.to(device)
-
-    print(f"Treinando utilizando: {device}")
-
-    # Definindo o otimizador e a loss-functions
-    optimizer = optim.Adamax(model.parameters(), lr=LR)
-    criterion = nn.CrossEntropyLoss().to(device)
-
-    val_metrics = {
-        "accuracy": Accuracy(),
-        "precision": Precision(average='weighted'),
-        "recall": Recall(average='weighted'),
-        "f1": (Precision(average='weighted') * Recall(average='weighted') * 2 / (Precision(average='weighted') + Recall(average='weighted'))),
-        "loss": Loss(criterion)
-    }
-
-    # Definindo os trainers para treinamento e validação
-    trainer = create_supervised_trainer(model, optimizer, criterion, device)
-    val_evaluator = create_supervised_evaluator(model, val_metrics, device)
-
-    for name, metric in val_metrics.items():
-        metric.attach(val_evaluator, name)
-
-    train_bar = ProgressBar(desc="Treinando...")
-    val_bar = ProgressBar(desc="Validando...")
-    train_bar.attach(trainer)
-    val_bar.attach(val_evaluator)
-
-    # Função que é executada ao fim de toda epoch de treinamento
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_validation_results(trainer):
-        val_evaluator.run(val_loader)
-        metrics = val_evaluator.state.metrics
-
-        final_json[trainer.state.epoch] = metrics
-
-        print(f"Resultados da Validação - Epoch[{trainer.state.epoch}] {final_json[trainer.state.epoch]}")
-
-    # Definição da métrica para realizar o "checkpoint" do treinamento
-    # nesse caso será utilizada a métrica F1
-    def score_function(engine):
-        return engine.state.metrics["f1"]
-    
-    # Definindo e criando (se necessário) a pasta para armazenar os dados de saída
-    # da aplicação
-    output_folder = f"../output/{model.__class__.__name__}"
-
-    try:
-         os.mkdir(output_folder)
-    except OSError as _:
-         pass
-    
-    # Definindo o processo de checkpoint do modelo
-    model_checkpoint = ModelCheckpoint(
-        output_folder,
-        require_empty=False,
-        n_saved=1,
-        filename_prefix=f"train",
-        score_function=score_function,
-        score_name="f1",
-        global_step_transform=global_step_from_engine(trainer),
-    )
-        
-    val_evaluator.add_event_handler(Events.COMPLETED, model_checkpoint, {"model": model})
-
-    print(f"\nTreinando o modelo {model.__class__.__name__}...")
-
-    trainer.run(train_loader, max_epochs=EPOCHS)
-
-    print(f"\nTrain finished for model {model.__class__.__name__}")
-
-    # Salvando as métricas em um arquivo .json
-    with open(f"{output_folder}/training_results.json", "w") as f:
-        json.dump(final_json, f)
-
-    model.load_state_dict(torch.load(model_checkpoint.last_checkpoint))
-    
-    # Iniciando testes e coletando as métricas de qualidade dos mapas de ativação
-    get_cam_metrics(model, dataset_path+"/test")
 
 if __name__ == "__main__":
 
-    cvt_dataset_path = convert_dataset('../datasets/PetImages')
-    train_loader, val_loader = get_loaders(cvt_dataset_path, batch_size=BATCH_SIZE)
+    # Garantindo reprodutibilidade
+    manual_seed(0)
 
-    backbone_model = torch.hub.load('pytorch/vision:v0.10.0', 'densenet201', pretrained=True)
-    model = DenseNet201EncoderDecoder(backbone_model, 2)
+    parser = argparse.ArgumentParser(prog='Aprendizado profundo - Qualidade de explicações',
+                                     description='Esse programa realiza a coleta de métricas quantitativas referetes a qualidade de explicações geradas por diversos modelos')
+    
+    parser.add_argument('-m', '--model', type=str, required=True)
+    parser.add_argument('-g', '--gpu', type=int, required=True)
 
-    train_validade_test_model(model, cvt_dataset_path, train_loader, val_loader)
+    args = parser.parse_args()
+
+    datasets_path = os.path.join("..", "datasets")
+    datasets = ("CR", "LA", "LG", "NHL", "UCSB")
+
+    model_name = args.model.upper()
+    gpu = args.gpu
+
+    for dataset in datasets:
+
+        n_classes = len(os.listdir(os.path.join(datasets_path, dataset)))
+
+        match model_name:
+            case "DENSENET201":
+                model = DenseNet201GradCam(densenet201(weights='IMAGENET1K_V1'), n_classes)
+            case "DENSENET201AB":
+                model = DenseNet201EncoderDecoder(densenet201(weights='IMAGENET1K_V1'), n_classes)
+            case "RESNET50":
+                model = Resnet50GradCam(resnet50(weights='IMAGENET1K_V1'), n_classes)
+            case "EFFICIENTNETB0":
+                model = EfficientNetB0GradCam(efficientnet_b0(), n_classes)
+
+        train(model = model, 
+              dataset_path = datasets_path,
+              dataset_name = dataset, 
+              batch_size = BATCH_SIZE, 
+              epochs = EPOCHS, 
+              lr = LR, 
+              gpu = gpu)
+        
+        torch.cuda.empty_cache()
+
+
+    
