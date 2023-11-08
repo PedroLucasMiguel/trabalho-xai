@@ -78,13 +78,13 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ResNet(nn.Module):
+class ABN(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000):
         self.block = block
         self.gradients = None
         self.inplanes = 64
-        super(ResNet, self).__init__()
+        super(ABN, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -212,13 +212,15 @@ class ResNet(nn.Module):
 
         return ax, rx, [self.att, fe, per]
 
-def resnet50(pretrained=False, **kwargs):
+def abn_resnet50(pretrained=False, n_classes:int = 2):
     """Constructs a ResNet-50 model.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+    model = ABN(Bottleneck, [3, 4, 6, 3])
     if pretrained:
         model.load_state_dict(model_zoo.load_url('https://download.pytorch.org/models/resnet50-19c8e357.pth'), strict=False)
+
+    model.fc = nn.Linear(512 * model.block.expansion, n_classes)
     return model
 

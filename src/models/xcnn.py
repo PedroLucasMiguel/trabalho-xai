@@ -39,7 +39,7 @@ class XCNN(nn.Module):
     def get_activations(self, x:Tensor):
         out = self.encoder(x)
         out = self.decoder(out)
-        out = self.backbone.features(out)
+        out = self.backbone(out)
 
         return out
 
