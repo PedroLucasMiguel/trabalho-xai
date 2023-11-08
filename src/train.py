@@ -13,7 +13,7 @@ from ignite.handlers import ModelCheckpoint
 from ignite.contrib.handlers import global_step_from_engine
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.metrics import Accuracy, Precision, Recall, Loss
-from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
+from ignite.engine import Engine, Events, create_supervised_trainer, create_supervised_evaluator
 
 def train(model:nn.Module, 
           dataset_path:str,
@@ -49,8 +49,35 @@ def train(model:nn.Module,
             }
 
       # Definindo os trainers para treinamento e validação
-      trainer = create_supervised_trainer(model, optimizer, criterion, device)
-      val_evaluator = create_supervised_evaluator(model, val_metrics, device)
+      if model.__class__.__name__ == "ABN":
+            def train_step(engine, batch):
+                  model.train()
+                  optimizer.zero_grad()
+                  x, y = batch[0].to(device), batch[1].to(device)
+                  att_outputs, outputs, _ = model(x)
+
+                  att_loss = criterion(att_outputs, y)
+                  per_loss = criterion(outputs, y)
+                  loss = att_loss + per_loss
+                        
+                  loss.backward()
+                  optimizer.step()
+
+                  return loss.item()
+                        
+            def validation_step(engine, batch):
+                  model.eval()
+                  with torch.no_grad():
+                        x, y = batch[0].to(device), batch[1].to(device)
+                        _, y_pred, _ = model(x)
+                        return y_pred, y
+                  
+            trainer = Engine(train_step)
+            val_evaluator = Engine(validation_step)
+
+      else:
+            trainer = create_supervised_trainer(model, optimizer, criterion, device)
+            val_evaluator = create_supervised_evaluator(model, val_metrics, device)
 
       for name, metric in val_metrics.items():
             metric.attach(val_evaluator, name)

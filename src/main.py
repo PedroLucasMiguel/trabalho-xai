@@ -5,6 +5,7 @@ from models.densenet import *
 from models.resnet import *
 from models.efficientnet import *
 from models.xcnn import *
+from models.abn import *
 from torchvision.models import densenet201, resnet50, efficientnet_b0, vgg16
 from train import train
 
@@ -45,6 +46,8 @@ if __name__ == "__main__":
                 model = EfficientNetB0GradCam(efficientnet_b0(), n_classes)
             case "XCNN":
                 model = XCNN(vgg16(weights='IMAGENET1K_V1'), n_classes)
+            case "ABN":
+                model = abn_resnet50(True, n_classes)
 
         train(model = model, 
               dataset_path = datasets_path,

@@ -41,7 +41,11 @@ def get_grad_cam(model, class_to_backprop:int = 0, img_name = None, img = None):
     model.eval()
 
     # Obtendo a classificação do modelo e calculando o gradiente da classe esperada
-    outputs = model(input_batch)
+    if model.__class__.__name__ == "ABN":
+        _, outputs, _ = model(input_batch)
+    
+    else:
+        outputs = model(input_batch)
 
     prob = F.softmax(outputs).detach().cpu().numpy()
 
