@@ -5,7 +5,12 @@ import numpy as np
 def write_to_latex_table(metrics, model_output_folder:str, model_name:str) -> None:
     
     datasets = os.listdir(model_output_folder)
-    datasets.remove("latex_table.txt")
+
+    try:
+        datasets.index("latex_table.txt")
+        datasets.remove("latex_table.txt")
+    except ValueError as _:
+        pass
 
     with open(os.path.join(model_output_folder, "latex_table.txt"), "w") as f:
         f.write("\\begin{table*}[!h]\n")
@@ -33,7 +38,12 @@ def write_to_latex_table(metrics, model_output_folder:str, model_name:str) -> No
 def compile_cam_metrics(model_output_folder:str, model_name:str) -> None:
 
     datasets = os.listdir(model_output_folder)
-    datasets.remove("latex_table.txt")
+
+    try:
+        datasets.index("latex_table.txt")
+        datasets.remove("latex_table.txt")
+    except ValueError as _:
+        pass
 
     metrics_values = np.zeros((len(datasets), 4))
     j = 0 # Indice para armazenar as médias na matriz de metricas
@@ -66,5 +76,5 @@ def compile_cam_metrics(model_output_folder:str, model_name:str) -> None:
 
 if __name__ == "__main__":
 
-    compile_cam_metrics(os.path.join("..", "output", "DenseNet201GradCam"), "DenseNet-201")
+    compile_cam_metrics(os.path.join("..", "output", "Resnet50GradCam"), "ResNet-50")
     

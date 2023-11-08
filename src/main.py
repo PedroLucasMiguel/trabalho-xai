@@ -4,7 +4,8 @@ from torch import manual_seed
 from models.densenet import *
 from models.resnet import *
 from models.efficientnet import *
-from torchvision.models import densenet201, resnet50, efficientnet_b0
+from models.xcnn import *
+from torchvision.models import densenet201, resnet50, efficientnet_b0, vgg16
 from train import train
 
 # Hiper-parâmetros de treinamento
@@ -38,12 +39,12 @@ if __name__ == "__main__":
         match model_name:
             case "DENSENET201":
                 model = DenseNet201GradCam(densenet201(weights='IMAGENET1K_V1'), n_classes)
-            case "DENSENET201AB":
-                model = DenseNet201EncoderDecoder(densenet201(weights='IMAGENET1K_V1'), n_classes)
             case "RESNET50":
                 model = Resnet50GradCam(resnet50(weights='IMAGENET1K_V1'), n_classes)
             case "EFFICIENTNETB0":
                 model = EfficientNetB0GradCam(efficientnet_b0(), n_classes)
+            case "XCNN":
+                model = XCNN(vgg16(weights='IMAGENET1K_V1'), n_classes)
 
         train(model = model, 
               dataset_path = datasets_path,

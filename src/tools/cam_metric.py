@@ -18,8 +18,10 @@ def get_grad_cam(model, class_to_backprop:int = 0, img_name = None, img = None):
     device = "cpu"
 
     if img is None:
+        og_img = None
         img = Image.open(img_name).convert("RGB")
     else:
+        og_img = img.copy()
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(img)
 
@@ -59,7 +61,7 @@ def get_grad_cam(model, class_to_backprop:int = 0, img_name = None, img = None):
     layer_output = layer_output[0, : , : , :]
 
     # Salvando os grad-cams
-    img = cv2.imread(img_name)
+    img = og_img if og_img is not None else cv2.imread(img_name)
     img = np.float32(img)
 
     heatmap = torch.mean(layer_output, dim=0).detach().numpy()
@@ -116,7 +118,7 @@ def get_cam_metrics(model, test_imgs_path:str, dataset_name:str):
         m3 = (max(0, p1-p2)/p1)
 
         # ADCC
-        adcc = 3*((1/m1) + (1/1-m2) + (1/1-m3))**-1
+        adcc = 3*((1/m1) + (1/(1-m2)) + (1/(1-m3)))**-1
 
         print("Coherency (HB): {} | Complexity (LB): {} | Average Drop (LB): {} | ADCC (HB): {}".format(m1,m2,m3,adcc))
         img_name = img.split('/')[-1]
