@@ -14,9 +14,10 @@ def write_to_latex_table(metrics, model_output_folder:str, model_name:str) -> No
 
     with open(os.path.join(model_output_folder, "latex_table.txt"), "w") as f:
         f.write("\\begin{table}[!h]\n")
-        f.write("\\caption{Valores de coherency (COH), complexity (COM), average drop (AVGD) e ADCC referentes ao modelo " + model_name + " em relação a todos os datasets utilizados.}\n")
+        f.write("\\caption{Valores em porcentagem de coherency (COH), complexity (COM), confidence drop (CD) e ADCC referentes ao modelo " + model_name + " em relação a todos os datasets utilizados.}\n")
+        f.write("\\label{tab:" + model_name + "}\n")
         f.write("\\begin{tabular}{lllll}\n")
-        f.write("\\textbf{Dataset} & COH & COM & AVGD & ADCC \\\\ \\hline\n")
+        f.write("\\textbf{Dataset} & COH$\\uparrow$ & COM$\\downarrow$ & CD$\\downarrow$ & ADCC$\\uparrow$ \\\\ \\hline\n")
 
         for i in range(len(datasets)):
             line = f"\t {datasets[i]} & "
@@ -32,7 +33,7 @@ def write_to_latex_table(metrics, model_output_folder:str, model_name:str) -> No
 
             f.write(f"{line}\n")
         
-        f.write("\\textbf{Média:} & ")
+        f.write("\\textbf{Média} & ")
         line = ""
         for i in range(metrics.shape[1]):
             if i < metrics.shape[1] - 1:
@@ -90,4 +91,8 @@ def compile_cam_metrics(model_output_folder:str, model_name:str) -> None:
 if __name__ == "__main__":
 
     compile_cam_metrics(os.path.join("..", "output", "ABN"), "Attention Branch Network (ABN)")
+    compile_cam_metrics(os.path.join("..", "output", "DenseNet201GradCam"), "DenseNet-201")
+    compile_cam_metrics(os.path.join("..", "output", "EfficientNetB0GradCam"), "EfficientNet-b0")
+    compile_cam_metrics(os.path.join("..", "output", "Resnet50GradCam"), "ResNet-50")
+    compile_cam_metrics(os.path.join("..", "output", "XCNN"), "Explainable Convolutional Neural Network (XCNN)")
     
