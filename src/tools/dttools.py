@@ -33,7 +33,7 @@ def convert_dataset(dataset_dir:str, dataset_name:str) -> str:
             total_imgs += len(os.listdir(os.path.join(dataset_dir, dataset_name, c)))
 
         # Esse split indica que:
-        # 80% do dataset será dedicado para treino do modelo;
+        # 70% do dataset será dedicado para treino do modelo;
         # 15% do dataset será dedicado a validação do modelo;
         # 15% do dataset será dedicado ao testes do modelo pós treinamento;
         val_split = test_split = round(total_imgs * 0.30)/2

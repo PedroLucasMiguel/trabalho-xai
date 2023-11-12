@@ -49,6 +49,8 @@ def train(model:nn.Module,
             }
 
       # Definindo os trainers para treinamento e validação
+
+      # Checando se estamos treinando o modelo ABN para deifnir o traid/validation steps corretos
       if model.__class__.__name__ == "ABN":
             def train_step(engine, batch):
                   model.train()
@@ -134,7 +136,7 @@ def train(model:nn.Module,
 
       trainer.run(train_loader, max_epochs=epochs)
 
-      print(f"\nTrain finished for model {model.__class__.__name__}")
+      print(f"\nTreinamento finalizado para o modelo {model.__class__.__name__}")
 
       # Salvando as métricas em um arquivo .json
       with open(os.path.join(output_folder, "training_results.json"), "w") as f:
@@ -144,3 +146,8 @@ def train(model:nn.Module,
       
       # Iniciando testes e coletando as métricas de qualidade dos mapas de ativação
       get_cam_metrics(model, os.path.join(cvt_dataset_path, "test"), dataset_name)
+
+      os.system('cls' if os.name == 'nt' else 'clear')
+      print("Treinamento e teste finalizado!")
+      print(f"Todas as métricas obtidas para este modelo estão presentes em: ../output/{model.__class__.__name__}")
+      input("Pressione ENTER para finalizar...")
